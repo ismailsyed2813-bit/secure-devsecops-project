@@ -1,7 +1,29 @@
 pipeline {
     agent any
 
+    tools {
+        sonarQube 'sonar-scanner'
+    }
+
+    environment {
+        SONAR_TOKEN = credentials('sonar-token')
+    }
+
     stages {
+
+        stage('SonarQube Scan') {
+            steps {
+                withSonarQubeEnv('sonarqube') {
+                    sh '''
+                    sonar-scanner \
+                    -Dsonar.projectKey=secure-devsecops-project \
+                    -Dsonar.sources=. \
+                    -Dsonar.host.url=http://host.docker.internal:9000 \
+                    -Dsonar.login=$SONAR_TOKEN
+                    '''
+                }
+            }
+        }
 
         stage('Build Docker Image') {
             steps {
