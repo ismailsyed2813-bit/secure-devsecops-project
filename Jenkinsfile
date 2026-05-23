@@ -30,7 +30,7 @@ pipeline {
 
         stage('Run Container') {
             steps {
-                sh 'docker run -d -p 3002:3000 secure-node-app'
+                sh 'docker run -d -p 3003:3000 secure-node-app'
             }
         }
     }
