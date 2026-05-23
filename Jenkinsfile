@@ -3,6 +3,7 @@ pipeline {
 
     environment {
         SONAR_TOKEN = credentials('sonar-token')
+        SCANNER_HOME = tool 'sonar-scanner'
     }
 
     stages {
@@ -11,7 +12,7 @@ pipeline {
             steps {
                 withSonarQubeEnv('sonarqube') {
                     sh '''
-                    /var/jenkins_home/tools/hudson.plugins.sonar.SonarRunnerInstallation/sonar-scanner/bin/sonar-scanner \
+                    ${SCANNER_HOME}/bin/sonar-scanner \
                     -Dsonar.projectKey=secure-devsecops-project \
                     -Dsonar.sources=. \
                     -Dsonar.host.url=http://host.docker.internal:9000 \
