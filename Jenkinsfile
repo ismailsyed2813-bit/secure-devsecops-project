@@ -4,10 +4,18 @@ pipeline {
     stages {
 
         stage('SonarQube Scan') {
-            steps {
-                echo "Running SonarQube Scan"
-            }
+    steps {
+        withSonarQubeEnv('sonar-server') {
+            sh '''
+            sonar-scanner \
+              -Dsonar.projectKey=secure-devsecops-project \
+              -Dsonar.sources=. \
+              -Dsonar.host.url=http://host.docker.internal:9000 \
+              -Dsonar.login=squ_2b64efbca4929b4645f034780dbcbf1a41626f1c
+            '''
         }
+    }
+}
 
         stage('Build Docker Image') {
             steps {
