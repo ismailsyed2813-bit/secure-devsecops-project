@@ -5,7 +5,7 @@ pipeline {
 
         stage('SonarQube Scan') {
     steps {
-        withSonarQubeEnv('sonar-server') {
+        withSonarQubeEnv('sonarqube') {
             sh '''
             sonar-scanner \
               -Dsonar.projectKey=secure-devsecops-project \
