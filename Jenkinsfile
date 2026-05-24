@@ -17,6 +17,13 @@ pipeline {
             }
         }
 
+        stage('OWASP Dependency Check') {
+            steps {
+                dependencyCheck additionalArguments: '--scan .',
+                odcInstallation: 'OWASP-DC'
+            }
+        }
+
         stage('Build Docker Image') {
             steps {
                 sh 'docker build -t ismail2813/secure-devsecops-app:latest .'
@@ -52,6 +59,23 @@ pipeline {
                 docker run -d --name secure-container -p 3001:3000 ismail2813/secure-devsecops-app:latest
                 '''
             }
+        }
+
+        stage('Deploy to Kubernetes') {
+            steps {
+                sh 'kubectl apply -f k8s/'
+            }
+        }
+    }
+
+    post {
+
+        success {
+            echo 'Pipeline executed successfully!'
+        }
+
+        failure {
+            echo 'Pipeline failed!'
         }
     }
 }

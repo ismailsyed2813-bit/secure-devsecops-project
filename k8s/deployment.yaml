@@ -19,8 +19,8 @@ spec:
     spec:
       containers:
       - name: secure-node-app
-        image: secure-node-app
-        imagePullPolicy: Never
+
+        image: ismail2813/secure-devsecops-app:latest
 
         ports:
         - containerPort: 3000
