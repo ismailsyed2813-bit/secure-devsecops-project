@@ -30,9 +30,10 @@ pipeline {
         }
 
         stage('Run Container') {
-            steps {
-                sh 'docker run -d -p 3000:3000 secure-app'
-            }
-        }
+    steps {
+        sh '''
+        docker rm -f secure-container || true
+        docker run -d --name secure-container -p 3000:3000 secure-app
+        '''
     }
 }
