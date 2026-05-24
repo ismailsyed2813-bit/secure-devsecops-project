@@ -33,7 +33,7 @@ pipeline {
             steps {
                 sh '''
                 docker rm -f secure-container || true
-                docker run -d --name secure-container -p 3000:3000 secure-app
+                docker run -d --name secure-container -p 3001:3000 secure-app
                 '''
             }
         }
