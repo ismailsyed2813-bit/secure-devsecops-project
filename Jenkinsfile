@@ -21,7 +21,11 @@ pipeline {
                 }
             }
         }
-
+    stage('Trivy Scan') {
+       steps {
+          sh 'trivy image secure-node-app || true'
+       }
+    }
         stage('Build Docker Image') {
             steps {
                 sh 'docker build -t secure-node-app .'
