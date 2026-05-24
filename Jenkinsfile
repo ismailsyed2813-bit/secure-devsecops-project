@@ -8,10 +8,10 @@ pipeline {
     stages {
 
         stage('Checkout Code') {
-            steps {
-                git 'https://github.com/ismailsyed2813-bit/secure-devsecops-project.git'
-            }
-        }
+    steps {
+        git 'https://github.com/ismailsyed2813-bit/secure-devsecops-project.git'
+    }
+}
 
         stage('SonarQube Scan') {
             steps {
