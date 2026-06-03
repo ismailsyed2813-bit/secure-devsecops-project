@@ -17,10 +17,24 @@ pipeline {
             }
         }
 
+        stage('Quality Gate') {
+            steps {
+                timeout(time: 5, unit: 'MINUTES') {
+                    waitForQualityGate abortPipeline: true
+                }
+            }
+        }
+
         stage('OWASP Dependency Check') {
             steps {
-                dependencyCheck additionalArguments: '--scan .',
-                odcInstallation: 'OWASP-DC'
+                dependencyCheck(
+                    additionalArguments: '--scan .',
+                    odcInstallation: 'OWASP-DC'
+                )
+
+                dependencyCheckPublisher(
+                    pattern: '**/dependency-check-report.xml'
+                )
             }
         }
 
@@ -38,11 +52,13 @@ pipeline {
 
         stage('Push Docker Image') {
             steps {
-                withCredentials([usernamePassword(
-                    credentialsId: 'dockerhub-creds',
-                    usernameVariable: 'DOCKER_USER',
-                    passwordVariable: 'DOCKER_PASS'
-                )]) {
+                withCredentials([
+                    usernamePassword(
+                        credentialsId: 'dockerhub-creds',
+                        usernameVariable: 'DOCKER_USER',
+                        passwordVariable: 'DOCKER_PASS'
+                    )
+                ]) {
 
                     sh '''
                     echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin
@@ -52,18 +68,22 @@ pipeline {
             }
         }
 
-        stage('Run Container') {
+        stage('Deploy to Kubernetes') {
             steps {
                 sh '''
-                docker rm -f secure-container || true
-                docker run -d --name secure-container -p 3001:3000 ismail2813/secure-devsecops-app:latest
+                kubectl apply -f deployment.yaml
+                kubectl apply -f service.yaml
                 '''
             }
         }
 
-        stage('Deploy to Kubernetes') {
+        stage('Verify Deployment') {
             steps {
-                sh 'kubectl apply -f k8s/'
+                sh '''
+                kubectl rollout status deployment/secure-node-app
+                kubectl get pods
+                kubectl get svc
+                '''
             }
         }
     }
@@ -71,11 +91,15 @@ pipeline {
     post {
 
         success {
-            echo 'Pipeline executed successfully!'
+            echo '✅ DevSecOps Pipeline Executed Successfully!'
         }
 
         failure {
-            echo 'Pipeline failed!'
+            echo '❌ DevSecOps Pipeline Failed!'
+        }
+
+        always {
+            cleanWs()
         }
     }
 }
