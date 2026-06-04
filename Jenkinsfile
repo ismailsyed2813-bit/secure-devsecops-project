@@ -1,7 +1,29 @@
 pipeline {
     agent any
 
+    environment {
+        IMAGE_NAME = "ismail2813/secure-devsecops-app"
+        IMAGE_TAG  = "latest"
+    }
+
     stages {
+
+        stage('Checkout') {
+            steps {
+                checkout scm
+            }
+        }
+
+        stage('Verify Tools') {
+            steps {
+                sh '''
+                java -version || true
+                docker --version
+                kubectl version --client || true
+                trivy --version || true
+                '''
+            }
+        }
 
         stage('SonarQube Scan') {
             steps {
@@ -10,19 +32,19 @@ pipeline {
                     /opt/sonar-scanner/bin/sonar-scanner \
                     -Dsonar.projectKey=secure-devsecops-project \
                     -Dsonar.sources=. \
-                    -Dsonar.host.url=http://host.docker.internal:9000 \
-                    -Dsonar.login=squ_2b64efbca4929b4645f034780dbcbf1a41626f1c
+                    -Dsonar.host.url=$SONAR_HOST_URL \
+                    -Dsonar.token=$SONAR_AUTH_TOKEN
                     '''
                 }
             }
         }
 
-
         stage('OWASP Dependency Check') {
             steps {
                 dependencyCheck(
-                    additionalArguments: '--scan .',
-                    odcInstallation: 'OWASP-DC'
+                    odcInstallation: 'OWASP-DC',
+                    additionalArguments: '--scan . --format XML',
+                    stopBuild: false
                 )
 
                 dependencyCheckPublisher(
@@ -33,17 +55,23 @@ pipeline {
 
         stage('Build Docker Image') {
             steps {
-                sh 'docker build -t ismail2813/secure-devsecops-app:latest .'
+                sh '''
+                docker build -t ${IMAGE_NAME}:${IMAGE_TAG} .
+                '''
             }
         }
 
-        stage('Trivy Scan') {
+        stage('Trivy Image Scan') {
             steps {
-                sh 'trivy image ismail2813/secure-devsecops-app:latest'
+                sh '''
+                trivy image --severity HIGH,CRITICAL \
+                --no-progress \
+                ${IMAGE_NAME}:${IMAGE_TAG}
+                '''
             }
         }
 
-        stage('Push Docker Image') {
+        stage('Docker Login & Push') {
             steps {
                 withCredentials([
                     usernamePassword(
@@ -55,7 +83,10 @@ pipeline {
 
                     sh '''
                     echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin
-                    docker push ismail2813/secure-devsecops-app:latest
+
+                    docker push ${IMAGE_NAME}:${IMAGE_TAG}
+
+                    docker logout
                     '''
                 }
             }
@@ -73,8 +104,12 @@ pipeline {
         stage('Verify Deployment') {
             steps {
                 sh '''
-                kubectl rollout status deployment/secure-node-app
-                kubectl get pods
+                kubectl rollout status deployment/secure-node-app --timeout=120s
+
+                echo "Pods:"
+                kubectl get pods -o wide
+
+                echo "Services:"
                 kubectl get svc
                 '''
             }
